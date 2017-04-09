@@ -1,0 +1,124 @@
+<title>Gmail Shared Labels</title>
+<style>
+  body {padding:0px; margin:0px;}
+  #main { padding: 10px }
+  header {
+    background-color: #F1F1F1;
+    height: 60px;
+    width: 100%;
+  }
+  img#logo {float:left;padding:0 30px}
+  h2 { color:#4285f4; font-weight:bold; margin: 0 10px; padding:15px 10px 10px 240px }
+  button { 
+    color:white;
+    background-color: hsl(217,99%,65%);
+    font-size:13pt;
+    padding:5px;
+    font-weight:bold
+  }
+  button:hover {
+    background-color: hsl(217,99%,70%);
+  }
+  button.done {
+    background-color: hsl(217,30%,70%);
+  }
+  .invisible { display:none }
+</style>
+<header>
+<img id="logo" src="<?= logo ?>" />
+<h2>Gmail Shared Labels</h2>
+</header>
+<div id="main">
+<p>
+Gmail Shared Labels is a tool that lets you share labels (i.e. folders) with your google domain colleagues or others that share the same script instance.
+(i.e. the url of this page)
+</p>
+<button onclick='install()' id ='install'><?= installed ? 'Save' : 'Install' ?></button>
+<button onclick='uninstall()' id='uninstall' class='<?= installed ? '' : 'invisible' ?>'>Uninstall</button>
+
+<h3>Shared Labels</h3>
+<ul id="sharedlabels"></ul>
+
+<h3>Code</h3>
+<p>
+[<a href="https://github.com/schuyler1d/gmail-sharedlabels" target="_blank">source code</a>]
+
+<script>
+function $(x) { return document.getElementById(x); }
+function show(id, newcls, text) {
+  var elt = $(id);
+  elt.className = newcls||'';
+  if (text) { elt.innerHTML = text }
+}
+function hide(id) {$(id).className = 'invisible'; }
+var runner = google.script.run
+  .withFailureHandler(function(error, message) {
+    console.log(error, message);
+    alert('Error while ' + message + ': ' + error.message);
+  });    
+var sf = $('sharedlabels');
+
+function install() {
+  //1. get data from dom
+  var config = {};
+  for (var i=0,il=sf.childNodes.length; i<il; i++) {
+    var li = sf.childNodes.item(i);
+    var inputs = li.getElementsByTagName('input');
+    var liData = {};
+    for (var j=0,jl=inputs.length; j<jl; j++) {
+      var lj = inputs[j];
+      liData[lj.name] = ((lj.type == 'checkbox') ? lj.checked : lj.value);
+    }
+    config[liData.name] = liData;
+  }
+  show('install', '', 'Saving...');
+  //2. save the data
+  runner.withSuccessHandler(function() { 
+    show('install', 'done', 'Saved');
+    setTimeout(function() {
+      show('install', '', 'Save');
+    }, 4000);
+    show('uninstall');
+  }).install(config);
+}
+
+function uninstall() {
+  runner.withSuccessHandler(function() { 
+    show('install', '', 'Install');
+    hide('uninstall');
+  }).uninstall();
+}
+
+function folderLine(f, newElt) {
+  var li = document.createElement('li');
+  var lt = String.fromCharCode(60); //greater than sign;
+  li.innerHTML = ((newElt ? lt+'div class="newElt">Add'+lt+'/div>' : '')
+                  + 'Group name:'+lt+'input name="name" ' + (newElt ? '' : 'readonly') + ' value="' + f.name + '"/>'
+                  + 'Folder name:'+lt+'input name="label" value="' + f.label + '"/>'
+                  + 'Unshare folder name:'+lt+'input name="unlabel" value="' + f.unlabel + '"/>'
+                  + 'Member:'+lt+'input type="checkbox" name="member" ' + (f.member ? 'checked' : '') + ' />'
+                  + ''+lt+'div style="display:none">members listed here'+lt+'/div>'
+                 );
+  return li;
+}
+
+//INIT
+runner.withSuccessHandler(function(config) {
+  console.log(config);
+  for (var n in config) {
+    var f = config[n];
+    sf.appendChild(folderLine(f));
+  }
+  var newLine = folderLine({member:true, label:'', unlabel:'', name:''}, true);
+  sf.appendChild(newLine);
+}).loadPage();
+
+document.body.addEventListener('keyup', function(evt) {
+  //stop any special chars besides space in name or labels
+  //especially important to stop are ',' ';' and quote chars
+  var elt = evt.srcElement;
+  if (elt.type == 'text') {
+    elt.value = String(elt.value).replace(/[^\w ]/, '');
+  }
+}, true);
+</script>
