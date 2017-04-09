@@ -40,6 +40,9 @@ function setConfig(config) {
     finalConfig[name] = {name:name,
                          label:lbl.label.replace(/[^\w ]/g,''),
                          unlabel:lbl.unlabel.replace(/[^\w ]/g,'')};
+    if (finalConfig[name].label == finalConfig[name].unlabel) {
+      throw Error("label and unlabel must be different");
+    }
     var labelMembershipKey = L_PREFIX + name;
     var labelMemberships = propSplit(globalProperties, labelMembershipKey, ',');
     var curMemberInd = labelMemberships.indexOf(email);

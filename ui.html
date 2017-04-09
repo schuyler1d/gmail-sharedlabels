@@ -55,6 +55,7 @@ var runner = google.script.run
   .withFailureHandler(function(error, message) {
     console.log(error, message);
     alert('Error while ' + message + ': ' + error.message);
+    show('install', '', 'Save');
   });    
 var sf = $('sharedlabels');
 
