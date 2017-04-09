@@ -1,6 +1,6 @@
 var L_PREFIX = 'sharedLabel_';
 var MAX_OLD_THREAD_NUM = 50;
-var UPDATE_MINUTES = 3;
+var UPDATE_MINUTES = 1;
 
 function propSplit(src, prop, token) {
   //splits value on @token, and if empty, returns empty array
@@ -36,10 +36,10 @@ function setConfig(config) {
       continue; //blank name, probably an empty 'new row'
     }
     var lbl = config[name];
-    name = name.replace(/[^w ]/,'');
+    name = name.replace(/[^\w ]/g,'');
     finalConfig[name] = {name:name,
-                         label:lbl.label.replace(/[^w ]/,''),
-                         unlabel:lbl.unlabel.replace(/[^w ]/,'')};
+                         label:lbl.label.replace(/[^\w ]/g,''),
+                         unlabel:lbl.unlabel.replace(/[^\w ]/g,'')};
     var labelMembershipKey = L_PREFIX + name;
     var labelMemberships = propSplit(globalProperties, labelMembershipKey, ',');
     var curMemberInd = labelMemberships.indexOf(email);

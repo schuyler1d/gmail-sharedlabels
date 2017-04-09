@@ -58,8 +58,10 @@ the unlabel of "unresolved" -- when an email thread is mislabeled
 
 Synchronization is NOT immediate -- it will generally occur at
 whatever twice the value of UPDATE_MINUTES is set to at the top of
-Code.gs.  The repository has it set to 3, so it should take about 6
+Code.gs.  The repository has it set to 1, so it should take about two
 minutes for fellow members to sync.
+(Note that Google only allows certain values for UPDATE_MINUTES;
+ It can also be 5 or 10, e.g.)
 
 Whenever you want to create a new shared label across people, then go
 to the installation screen, add aq label and click Save.  Then tell

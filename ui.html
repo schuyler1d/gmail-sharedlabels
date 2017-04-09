@@ -118,7 +118,9 @@ document.body.addEventListener('keyup', function(evt) {
   //especially important to stop are ',' ';' and quote chars
   var elt = evt.srcElement;
   if (elt.type == 'text') {
-    elt.value = String(elt.value).replace(/[^\w ]/, '');
+    if (/[^\w ]/.test(elt.value)) {
+      elt.value = String(elt.value).replace(/[^\w ]/g, '');
+    }
   }
 }, true);
 </script>
