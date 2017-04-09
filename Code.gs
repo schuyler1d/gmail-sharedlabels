@@ -1,6 +1,6 @@
 var L_PREFIX = 'sharedLabel_';
 var MAX_OLD_THREAD_NUM = 50;
-var UPDATE_MINUTES = 1;
+var UPDATE_MINUTES = 5;
 
 function propSplit(src, prop, token) {
   //splits value on @token, and if empty, returns empty array

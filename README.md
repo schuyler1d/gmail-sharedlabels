@@ -56,9 +56,12 @@ the unlabel of "unresolved" -- when an email thread is mislabeled
 "unresolved."  That will trigger the next run to remove the label
 "resolved" from your fellow members, (including yourself).
 
+SYNC FREQUENCY
+--------------
+
 Synchronization is NOT immediate -- it will generally occur at
 whatever twice the value of UPDATE_MINUTES is set to at the top of
-Code.gs.  The repository has it set to 1, so it should take about two
+Code.gs.  The repository has it set to 5, so it should take about 10
 minutes for fellow members to sync.
 (Note that Google only allows certain values for UPDATE_MINUTES;
  It can also be 5 or 10, e.g.)
@@ -67,6 +70,15 @@ Whenever you want to create a new shared label across people, then go
 to the installation screen, add aq label and click Save.  Then tell
 others to visit the same URL and add themselves as members (checking
 the box, and clicking Save/Install).
+
+See:
+
+ * https://developers.google.com/apps-script/guides/services/quotas
+ * and https://developers.google.com/apps-script/reference/script/clock-trigger-builder#everyMinutes%28Integer%29
+
+The main thing you'll run up against is "Triggers total runtime" -- If you
+run the client every minute, and it takes about 1 or 2 seconds to run, then
+that's about 24-48 min/person/day.  At 5min intervals, more like 5-10min/person/day.
 
 AUTHOR
 ------
