@@ -38,8 +38,8 @@ function setConfig(config) {
     var lbl = config[name];
     name = name.replace(/[^\w ]/g,'');
     finalConfig[name] = {name:name,
-                         label:lbl.label.replace(/[^\w ]/g,''),
-                         unlabel:lbl.unlabel.replace(/[^\w ]/g,'')};
+                         label:lbl.label.replace(/[^\/\w ]/g,''),
+                         unlabel:lbl.unlabel.replace(/[^\/\w ]/g,'')};
     if (finalConfig[name].label == finalConfig[name].unlabel) {
       throw Error("label and unlabel must be different");
     }
@@ -67,38 +67,49 @@ function setConfig(config) {
   return memberships;
 }
 
-function isInstalled() {
-  return ScriptApp.getProjectTriggers().length != 0;
+function getTriggers(userProperties) {
+  userProperties = userProperties || PropertiesService.getUserProperties();
+  var triggers = [];
+  var triggerIds = JSON.parse(userProperties.getProperty(L_PREFIX + 'triggers') || '[]');
+  ScriptApp.getProjectTriggers().map(function(trigger) {
+    //OMG! this is ALL the triggers for the script (for all users) -- need to restrict
+    if (triggerIds.indexOf(trigger.getUniqueId()) != -1) {
+      triggers.push(trigger);
+    }
+  });
+  return triggers;
+}
+
+function isInstalled(triggers) {
+  triggers = triggers || getTriggers();
+  return triggers.length != 0;
 }
 
 function install(config) {
+  var userProperties = PropertiesService.getUserProperties();
   uninstall();
-  if (!isInstalled()) {
-    var userProperties = PropertiesService.getUserProperties();
-    var triggers = [];
-    Logger.log('installing triggers ,' + new Date());
-    triggers.push(ScriptApp.newTrigger('updateUserSharedLabels').timeBased().everyMinutes(UPDATE_MINUTES).create());
 
-    if (triggers.length) {
-      var triggerIds = triggers.map(function(t) {return t.getUniqueId()});
-      userProperties.setProperty(L_PREFIX + 'triggers', JSON.stringify(triggerIds));
-    }
-    Logger.log('installing triggers FINISHED ,' + new Date());
+  var triggers = [];
+  Logger.log('installing triggers ,' + new Date());
+  triggers.push(ScriptApp.newTrigger('updateUserSharedLabels').timeBased().everyMinutes(UPDATE_MINUTES).create());
+
+  if (triggers.length) {
+    var triggerIds = triggers.map(function(t) {return t.getUniqueId()});
+    userProperties.setProperty(L_PREFIX + 'triggers', JSON.stringify(triggerIds));
   }
+  Logger.log('installing triggers FINISHED ,' + new Date());
+
   var memberships = setConfig(config);
   createOrGetLabels(config, memberships);
 }
 
 function uninstall() {
   var userProperties = PropertiesService.getUserProperties();
-  var triggerIds = JSON.parse(userProperties.getProperty(L_PREFIX + 'triggers') || '[]');
-  ScriptApp.getProjectTriggers().map(function(trigger) {
-    //OMG! this is ALL the triggers for the script (for all users) -- need to restrict
-    if (triggerIds.indexOf(trigger.getUniqueId()) != -1) {
-      ScriptApp.deleteTrigger(trigger);
+  var triggers = getTriggers();
+  triggers.map(function(userTrigger) {
+      ScriptApp.deleteTrigger(userTrigger);
       //necessary for rate-limiting
       Utilities.sleep(1000);
-    }
   });
   userProperties.setProperty(L_PREFIX + 'triggers', '[]');
 }
@@ -128,7 +139,10 @@ function loadPage() {
       lbl.member = true;
     }
   });
-  return sharedLabels;
+  return {
+    labels: sharedLabels,
+    triggers: getTriggers(userProperties)
+  };
 }
 
 function createOrGetLabels(config, memberships) {
@@ -217,7 +231,7 @@ function updateSharedLabel(name, userEmail, lastRun,
       var gmailThread = msgThreads[cmd[2]];
       if (gmailThread) {
         //by design: might overwrite a previous command with a different result
-        decisionDict[gmailThread.getId()] = [cms[1], gmailThread];
+        decisionDict[gmailThread.getId()] = [cmd[1], gmailThread];
       }
     };
   };
@@ -316,10 +330,7 @@ function updateProcessor(lastRun, commandList, msgThreads, fallbackCommandList) 
       if (msgThreads[msgId]) {
         thread = msgThreads[msgId];
       } else if (!thread) {
-        var msg = GmailApp.getMessageById(msgId);
-        if (msg) {
-          thread = msg.getThread();
-        }
+        thread = getThreadById(msgId);
       }
     });
     //now setup any new refs
@@ -357,14 +368,17 @@ function getChangedThreads(label, unlabel, curStateDecisions) {
   return changedThreads;
 }
 
-function  getIdsForTracking(t) {
-  var msgIds = []
-  var msgs = t.getMessages();
-  msgIds.push(msgs[0].getId());
-  if (msgs.length > 1) {
-    msgIds.push(msgs[msgs.length-1].getId());
-  }
-  return msgIds;
+function getThreadById(msgId) {
+  //msgId is the subject, because GmailMessage.getId() is not the same across users
+  var subject = decodeURIComponent(msgId); //
+  //ASSUME: just search for first one, even if redundant subjects
+  //IMPROVE: in theory we could make this more rigorous by getting subject+messages[0].id or something
+  var threads = GmailApp.search('subject:"'+subject+'"', 0, 1);
+  return threads[0]; //if empty will return undefined
+}
+
+function getIdsForTracking(t) {
+  return [encodeURIComponent(t.getFirstMessageSubject())];
 }
 
 function purgeExtraCommands(userCommands) {

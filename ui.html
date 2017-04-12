@@ -39,6 +39,8 @@ Gmail Shared Labels is a tool that lets you share labels (i.e. folders) with you
 <h3>Shared Labels</h3>
 <ul id="sharedlabels"></ul>
 
+<div id="triggers"></div>
+
 <h3>Code</h3>
 <p>
 [<a href="https://github.com/schuyler1d/gmail-sharedlabels" target="_blank">source code</a>]
@@ -106,12 +108,16 @@ function folderLine(f, newElt) {
 //INIT
 runner.withSuccessHandler(function(config) {
   console.log(config);
-  for (var n in config) {
-    var f = config[n];
+  for (var n in config.labels) {
+    var f = config.labels[n];
     sf.appendChild(folderLine(f));
   }
   var newLine = folderLine({member:true, label:'', unlabel:'', name:''}, true);
   sf.appendChild(newLine);
+  if (config.triggers) {
+    var tdiv = $('triggers');
+    tdiv.innerHTML = 'Installed trigger?:' + config.triggers.join(' ');
+  }
 }).loadPage();
 
 document.body.addEventListener('keyup', function(evt) {
@@ -119,8 +125,8 @@ document.body.addEventListener('keyup', function(evt) {
   //especially important to stop are ',' ';' and quote chars
   var elt = evt.srcElement;
   if (elt.type == 'text') {
-    if (/[^\w ]/.test(elt.value)) {
-      elt.value = String(elt.value).replace(/[^\w ]/g, '');
+    if (/[^\/\w ]/.test(elt.value)) {
+      elt.value = String(elt.value).replace(/[^\/\w ]/g, '');
     }
   }
 }, true);
