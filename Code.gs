@@ -101,6 +101,9 @@ function install(config) {
 
   var memberships = setConfig(config);
   createOrGetLabels(config, memberships);
+  return {
+    triggers: triggers.length
+  };
 }
 
 function uninstall() {
@@ -112,11 +115,16 @@ function uninstall() {
       Utilities.sleep(1000);
   });
   userProperties.setProperty(L_PREFIX + 'triggers', '[]');
+  return {
+    triggers: 0
+  };
 }
 
 function doGet() {
   var t = HtmlService.createTemplateFromFile('ui');
   t.installed = isInstalled();
+  t.synchronization_lag = UPDATE_MINUTES * 2;
+
   var email = Session.getActiveUser().getEmail();
   t.logo = '';
   if (email) {
@@ -141,7 +149,8 @@ function loadPage() {
   });
   return {
     labels: sharedLabels,
-    triggers: getTriggers(userProperties)
+    triggers: getTriggers(userProperties).length,
+    synchronization_lag: UPDATE_MINUTES * 2
   };
 }
 

@@ -30,9 +30,29 @@
 </header>
 <div id="main">
 <p>
-Gmail Shared Labels is a tool that lets you share labels (i.e. folders) with your google domain colleagues or others that share the same script instance.
-(i.e. the url of this page)
+Gmail Shared Labels is a tool that lets you share labels (i.e. folders) with your google domain colleagues or others that share the same script instance. (i.e. the url of this page)
 </p>
+<h3>Instructions</h3>
+<p>
+<b>How shared labels work:</b>
+  Once installed, this script runs every <?= synchronization_lag ?> minutes on your mailbox
+  and each of your colleagues&rsquo;.  Any email threads you or your colleagues have marked with a
+  shared label are labeled on your own inbox.
+<p>
+Occasionally one wants to remove a label.  In the original use-case, if you mark a thread as <code>resolved</code>
+but then new information comes and you want to remove the label -- just removing the label on your own thread
+will just get re-marked with the label, since in the past it was marked that way.  Thus, we need an UNlabel label -- a label to mark a thread, to tell your own inbox and others that the label should be removed.  The UNlabel
+should not be used as anything other than for removing the main label -- the script goes through and removes the
+unlabel, too.
+
+<p>
+<b>Setting up shared labels:</b>
+To get started, name the group that uses the shared label -- this is just a descriptive name for the purposes
+of this configuration screen, and mark yourself as a member.  Then tell your colleagues to visit this
+page as well, and check the Member box by the label you created and to save/install.
+<p>
+
+
 <button onclick='install()' id ='install'><?= installed ? 'Save' : 'Install' ?></button>
 <button onclick='uninstall()' id='uninstall' class='<?= installed ? '' : 'invisible' ?>'>Uninstall</button>
 
@@ -76,19 +96,21 @@ function install() {
   }
   show('install', '', 'Saving...');
   //2. save the data
-  runner.withSuccessHandler(function() { 
+  runner.withSuccessHandler(function(config) {
     show('install', 'done', 'Saved');
     setTimeout(function() {
       show('install', '', 'Save');
     }, 4000);
     show('uninstall');
+    updateTriggerInstallation(config);
   }).install(config);
 }
 
 function uninstall() {
-  runner.withSuccessHandler(function() { 
+  runner.withSuccessHandler(function(config) {
     show('install', '', 'Install');
     hide('uninstall');
+    updateTriggerInstallation(config);
   }).uninstall();
 }
 
@@ -97,12 +119,19 @@ function folderLine(f, newElt) {
   var lt = String.fromCharCode(60); //greater than sign;
   li.innerHTML = ((newElt ? lt+'div class="newElt">Add'+lt+'/div>' : '')
                   + 'Group name:'+lt+'input name="name" ' + (newElt ? '' : 'readonly') + ' value="' + f.name + '"/>'
-                  + 'Folder name:'+lt+'input name="label" value="' + f.label + '"/>'
-                  + 'Unshare folder name:'+lt+'input name="unlabel" value="' + f.unlabel + '"/>'
+                  + 'Label name:'+lt+'input name="label" value="' + f.label + '"/>'
+                  + 'Unlabel name:'+lt+'input name="unlabel" value="' + f.unlabel + '"/>'
                   + 'Member:'+lt+'input type="checkbox" name="member" ' + (f.member ? 'checked' : '') + ' />'
                   + ''+lt+'div style="display:none">members listed here'+lt+'/div>'
                  );
   return li;
+}
+
+function updateTriggerInstallation(config) {
+  var tdiv = $('triggers');
+  tdiv.innerHTML =  ((config.triggers) ?
+                     'Syncing is installed'
+                     : 'Syncing is not yet installed');
 }
 
 //INIT
@@ -114,10 +143,7 @@ runner.withSuccessHandler(function(config) {
   }
   var newLine = folderLine({member:true, label:'', unlabel:'', name:''}, true);
   sf.appendChild(newLine);
-  if (config.triggers) {
-    var tdiv = $('triggers');
-    tdiv.innerHTML = 'Installed trigger?:' + config.triggers.join(' ');
-  }
+  updateTriggerInstallation(config);
 }).loadPage();
 
 document.body.addEventListener('keyup', function(evt) {
